@@ -1,10 +1,13 @@
 package com.kakawait.security;
 
+import org.apache.catalina.filters.RequestDumperFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.oauth2.client.EnableOAuth2Sso;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.ResourceServerProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -22,6 +25,8 @@ import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.kakawait.CustomUserInfoTokenServices;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -44,7 +49,22 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     private static final String CSRF_HEADER_NAME = "X-XSRF-TOKEN";
 
     @Autowired
-    private ResourceServerTokenServices resourceServerTokenServices;
+  	private ResourceServerProperties sso;
+    
+
+    @Profile("!cloud")
+    @Bean
+    RequestDumperFilter requestDumperFilter() {
+        return new RequestDumperFilter();
+    }
+    
+  	@Bean
+    @Primary
+  	public ResourceServerTokenServices myUserInfoTokenServices() {
+  		return new CustomUserInfoTokenServices(sso.getUserInfoUri(), sso.getClientId());
+  	}
+//    @Autowired
+//    private ResourceServerTokenServices resourceServerTokenServices;
 
     @Bean
     @Primary
@@ -77,7 +97,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     private AuthenticationManager oauthAuthenticationManager() {
         OAuth2AuthenticationManager oAuth2AuthenticationManager = new OAuth2AuthenticationManager();
         oAuth2AuthenticationManager.setResourceId("apigateway");
-        oAuth2AuthenticationManager.setTokenServices(resourceServerTokenServices);
+        oAuth2AuthenticationManager.setTokenServices(myUserInfoTokenServices());
         oAuth2AuthenticationManager.setClientDetailsService(null);
 
         return oAuth2AuthenticationManager;
@@ -129,4 +149,5 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
         repository.setHeaderName(CSRF_HEADER_NAME);
         return repository;
     }
+     
 }
