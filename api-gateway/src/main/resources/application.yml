@@ -18,15 +18,21 @@ eureka:
       defaultZone: http://${eureka.instance.hostname}:${eureka.instance.port}/eureka/
 
 zuul:
+  add-host-header: true
+  add-proxy-headers: true
+  sensitive-headers:
   routes:
     dummy-service: 
       path: /dummy/**
-        
+    ui-service:
+      path: /ui/**
+      stripPrefix: false
+    resource-service: /res/** 
+    biz-service: /biz/**
+    product-service: /product/**
     uaa-service:
-      sensitiveHeaders:
       path: /uaa/**
       stripPrefix: false
-  add-proxy-headers: true
 
 security:
   basic:
@@ -36,7 +42,7 @@ security:
       client-id: demo
       client-secret: demo
       access-token-uri: ${auth-server}/oauth/token
-      user-authorization-uri: ${auth-server}/oauth/authorize
+      user-authorization-uri: /oauth/authorize
       scope: read, write
     resource:
       user-info-uri: ${auth-server}/me
@@ -59,3 +65,24 @@ eureka:
   client:
     service-url:
       defaultZone: ${REGISTRY_URL}
+      
+
+
+logging:
+  level:
+    ROOT: INFO
+    se.callista: INFO
+
+    # Get info regarding connection to the cofig server and retries if required
+    org.springframework.cloud.config.client.ConfigServicePropertySourceLocator: INFO
+    org.springframework.retry.support.RetryTemplate: DEBUG
+
+    # Set INFO to see the allocated port
+    org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainer: INFO
+    org.springframework.boot.context.embedded.undertow.UndertowEmbeddedServletContainer: INFO
+
+    # Set DEBUG level on Hystrix to get an error message when a fallback method is used.
+    com.netflix.hystrix: DEBUG
+    com.netflix.hystrix.strategy.properties.HystrixPropertiesChainedArchaiusProperty: WARN
+    org.springframework.security: DEBUG
+debug: true
